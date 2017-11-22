@@ -32,16 +32,20 @@ public class CameraController : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
+        CameraFollow();
+	}
+
+    void CameraFollow()
+    {
         updatedXOffset = xOffset * objectToFollow.GetComponent<Rigidbody2D>().velocity.x * xOffsetMult;
 
-        Vector3 playerPosition = 
-            new Vector3(objectToFollow.position.x + updatedXOffset, 
+        Vector3 playerPosition =
+            new Vector3(objectToFollow.position.x + updatedXOffset,
             objectToFollow.position.y + yOffset, zOffset);
 
         Vector3 adjustedPosition =
             Vector3.Lerp(transform.position, playerPosition, catchUpSpeed * Time.deltaTime);
 
         transform.position = new Vector3(adjustedPosition.x, objectToFollow.position.y + yOffset, adjustedPosition.z);
-
-	}
+    }
 }

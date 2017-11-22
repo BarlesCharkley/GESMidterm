@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
 {
     #region Editor Fields
@@ -14,6 +13,9 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField]
     private float jumpHeight = 6;
+
+    [SerializeField]
+    private float slamStrength = 50;
 
     [SerializeField]
     private Transform groundCheckPosition;
@@ -33,11 +35,17 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float powerupStrength;
 
-    [SerializeField]
-    private PhysicsMaterial2D defaultPhysics;
+    //[SerializeField]
+    //private PhysicsMaterial2D defaultPhysics;
+
+    //[SerializeField]
+    //private PhysicsMaterial2D powerUpPhysics;
 
     [SerializeField]
-    private PhysicsMaterial2D powerUpPhysics;
+    private Sprite regularCherry;
+
+    [SerializeField]
+    private Sprite powerupCherry;
 
     #endregion
 
@@ -51,11 +59,19 @@ public class PlayerMovement : MonoBehaviour
 
     private Animator myAnimator;
 
+    private SpriteRenderer myRenderer;
+
     private float horizontalInput;
 
     private bool pressedJump;
 
+    private bool pressedSlam;
+
     public int coinCount;
+
+    private float defaultSpeed;
+
+    private Hazard hazardScript;
 
     #endregion
 
@@ -68,19 +84,26 @@ public class PlayerMovement : MonoBehaviour
         isOnGround = groundColliders.Length > 0;
     }
 
-    // Use this for initialization
     void Start ()
     {
         myRigidbody2D = GetComponent<Rigidbody2D>();
         myCollider = GetComponent<Collider2D>();
-        myAnimator = GetComponent<Animator>();
+        myAnimator = GetComponentInChildren<Animator>();
+        myRenderer = GetComponentInChildren<SpriteRenderer>();
+        hazardScript = FindObjectOfType<Hazard>();
+        defaultSpeed = speed;
 	}
 	
-	// Update is called once per frame
 	void Update ()
     {
         GetMovementInput();
         GetJumpInput();
+        CheckForPowerup();
+
+        if (myRenderer.enabled == false)
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     private void FixedUpdate()
@@ -99,12 +122,14 @@ public class PlayerMovement : MonoBehaviour
     private void GetJumpInput()
     {
         pressedJump = Input.GetButtonDown("Jump");
+        pressedSlam = Input.GetKeyDown(KeyCode.S);
     }
 
     private void HandlePlayerMovement()
     {
         myRigidbody2D.velocity =
             new Vector2(speed * horizontalInput, myRigidbody2D.velocity.y);
+
     }
 
     private void HandleJump()
@@ -116,7 +141,13 @@ public class PlayerMovement : MonoBehaviour
 
             myAnimator.SetTrigger("Jump");
 
-            isOnGround = false;
+            //isOnGround = false;
+        }
+
+        if (pressedSlam && !isOnGround)
+        {
+            myRigidbody2D.velocity = new Vector2(0, 0);
+            myRigidbody2D.AddForce(new Vector2(0, -slamStrength), ForceMode2D.Impulse);
         }
     }
 
@@ -124,8 +155,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (GetComponent<Transform>().position.y <= deathHeight)
         {
-            Debug.Log("Casul");
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            hazardScript.Die();
         }
     }
 
@@ -137,14 +167,27 @@ public class PlayerMovement : MonoBehaviour
     IEnumerator PowerUp()
     {
         speed += powerupStrength;
-        myCollider.sharedMaterial = powerUpPhysics;
-        myRigidbody2D.sharedMaterial = powerUpPhysics;
-
+        jumpHeight += (powerupStrength / 2);
         yield return new WaitForSeconds(powerupTime);
-
         speed -= powerupStrength;
-        myCollider.sharedMaterial = defaultPhysics;
-        myRigidbody2D.sharedMaterial = defaultPhysics;
-        
+        jumpHeight -= (powerupStrength / 2);
     }
+
+    void CheckForPowerup()
+    {
+        if (speed == defaultSpeed)
+        {
+            //myRigidbody2D.sharedMaterial = defaultPhysics;
+            //myCollider.sharedMaterial = defaultPhysics;
+            myRenderer.sprite = regularCherry;
+        }
+
+        else
+        {
+            //myRigidbody2D.sharedMaterial = powerUpPhysics;
+            //myCollider.sharedMaterial = powerUpPhysics;
+            myRenderer.sprite = powerupCherry;
+        }
+    }
+
 }
